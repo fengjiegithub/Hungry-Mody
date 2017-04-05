@@ -1,9 +1,9 @@
 <template>
   <div class="goods">
     <!--左侧选项列表-->
-    <div class="menu-wrap">
+    <div class="menu-wrap" ref="menu">
       <ul>
-        <li v-for="item in goods" class="menu-item">
+        <li v-for="(item,index) in goods" class="menu-item"  v-bind:class="{'current':currentIndex ===index}" @click="selectMenu(index,$event)">
           <span class="text border-1px">
             <span v-show="item.type>0" class="icon" :class="classMap[item.type]"></span>{{item.name}}
           </span>
@@ -11,9 +11,9 @@
       </ul>
     </div>
     <!--右侧商品列表-->
-    <div class="foods-wrap">
+    <div class="foods-wrap" ref="food">
       <ul>
-        <li v-for="item in goods" class="food-list">
+        <li v-for="item in goods" class="food-list food-list-hook">
           <h1 class="title">{{item.name}}</h1>
           <ul>
             <li v-for="food in item.foods" class="food-item">
@@ -37,20 +37,28 @@
         </li>
       </ul>
     </div>
+    <!--底部购物车-->
+    <!--将数据传递给shopcart组件-->
+    <shopcart :delivery-price="seller.deliveryPrice" :min-price="seller.minPrice"></shopcart>
   </div>
 </template>
 
 <script type="text/ecmascript-6">
+  import BScroll from "better-scroll";
+  import shopcart from "components/shopcart/shopcart";
   const ERR_OK = 0;
   export default{
-    porps: {
+    props: {
       seller: {
         type: Object
       }
     },
     data(){
       return {
-        goods: []
+        goods: [],
+        listHeight:[],
+//        实时拿到右侧详情的Y值
+        scrollY:0
       }
     },
     created(){
@@ -59,9 +67,71 @@
         response = response.body;
         if (response.errno === ERR_OK) {
           this.goods = response.data;
-          console.log(this.goods);
+//          在Vue中DOM发生变化，都是在nextTick函数回调之后，一般想操作原生DOM都是调用这个接口
+          this.$nextTick(()=>{
+            this._initScroll();
+            this._calculateHeight();
+          })
         }
       })
+    },
+    computed:{
+//        定义左侧列表的索引
+        currentIndex(){
+          for(let i=0;i<this.listHeight.length;i++){
+              let height1 = this.listHeight[i];
+              let height2 = this.listHeight[i+1];
+//              如果当前的停留,在当前和后一个之间
+//            !height2 是防止+1后最后一个没有值;
+              if(!height2 ||(this.scrollY >= height1 && this.scrollY < height2)){
+                return i;
+              }
+          }
+//          如果 listHeight 没有值的时候
+          return 0;
+        }
+    },
+    methods:{
+      selectMenu(index,event){
+//        传入点击列表项的index,及事件
+//        BScroll中派发事件和普通点击事件有属性区别
+//        原生浏览器没有_constructor    自定义事件的时候为true 那么我们去做派发
+//         这么做是为了 统一  pc和手机端获取index
+        if(!event._constructed){
+          return;
+        }
+        let foodList = this.$refs.food.getElementsByClassName('food-list-hook');
+        let el = foodList[index];
+        this.foodsScroll.scrollToElement(el,300);
+        console.log(index);
+      },
+      _initScroll(){
+//            接受两个对象  1、dom  2、json
+          this.meunScroll = new BScroll(this.$refs.menu,{click:true});
+          this.foodsScroll = new BScroll(this.$refs.food,{
+              probeType :3,
+          });
+          this.foodsScroll.on("scroll",(pos)=>{
+//              检测scroll滚动的时候，实时返回滚动位置
+              this.scrollY = Math.abs(Math.round(pos.y));
+
+          })
+        },
+        _calculateHeight(){
+          let foodList = this.$refs.food.getElementsByClassName("food-list-hook");
+          let height =0;
+          this.listHeight.push(height);
+//          遍历获取每项食物分类的高度
+          for(let i = 0;i<foodList.length;i++){
+              let item = foodList[i];
+              height+=item.clientHeight;
+              this.listHeight.push(height);
+          }
+      }
+    },
+    components:{
+//      在模版中使用
+        shopcart
     }
   };
 </script>
@@ -87,6 +157,16 @@
       width: 56px;
       line-height: 14px;
       padding: 0 12px;
+      &.current{
+        background: #fff;
+        font-weight: 700;
+        position: relative;
+        margin-top: -1px;
+        z-index: 10;
+        .text{
+          @include border-none();
+        }
+      }
       .icon {
         display: inline-block;
         width: 12px;
@@ -161,6 +241,9 @@
           font-size: 10px;
           color: rgb(147,153,159);
         }
+        .desc{
+          line-height: 12px;
+        }
         .extra{
           margin-bottom:0;
           &.count{
@@ -185,3 +268,6 @@
     }
   }
 </style>
+
+
+
