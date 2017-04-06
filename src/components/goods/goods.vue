@@ -31,6 +31,10 @@
                   <span class="now">￥{{food.price}}</span>
                   <span v-show="food.oldPrice" class="old">￥{{food.oldPrice}}</span>
                 </div>
+                <div class="cartcontrol-wrap">
+                  <!--添加商品数量组件  传入列表中的每一项-->
+                  <cartcontrol :food ='food'></cartcontrol>
+                </div>
               </div>
             </li>
           </ul>
@@ -38,14 +42,16 @@
       </ul>
     </div>
     <!--底部购物车-->
-    <!--将数据传递给shopcart组件-->
-    <shopcart :delivery-price="seller.deliveryPrice" :min-price="seller.minPrice"></shopcart>
+    <!--将数据传递给shopcart组件 selectFoods 存放着添加商品的数组-->
+    <!--ref='shopcart 在父组件中使用自组件-->
+    <shopcart ref='shopcart' :select-foods="selectFoods" :delivery-price="seller.deliveryPrice" :min-price="seller.minPrice"></shopcart>
   </div>
 </template>
 
 <script type="text/ecmascript-6">
   import BScroll from "better-scroll";
   import shopcart from "components/shopcart/shopcart";
+  import cartcontrol  from 'components/cartcontrol/cartcontrol';
   const ERR_OK = 0;
   export default{
     props: {
@@ -89,6 +95,19 @@
           }
 //          如果 listHeight 没有值的时候
           return 0;
+        },
+        selectFoods(){
+//            遍历food
+        let foods = [];
+        this.goods.forEach((good)=>{
+            good.foods.forEach((food)=>{
+//                拿到 li中遍历的food  如果count 有值，说明它被选中
+              if(food.count){
+                  foods.push(food);
+              }
+            });
+        });
+        return foods;
         }
     },
     methods:{
@@ -109,6 +128,7 @@
 //            接受两个对象  1、dom  2、json
           this.meunScroll = new BScroll(this.$refs.menu,{click:true});
           this.foodsScroll = new BScroll(this.$refs.food,{
+              click:true,
               probeType :3,
           });
           this.foodsScroll.on("scroll",(pos)=>{
@@ -117,7 +137,7 @@
 
           })
         },
-        _calculateHeight(){
+      _calculateHeight(){
           let foodList = this.$refs.food.getElementsByClassName("food-list-hook");
           let height =0;
           this.listHeight.push(height);
@@ -127,11 +147,23 @@
               height+=item.clientHeight;
               this.listHeight.push(height);
           }
+      },
+      _drop(target){
+//          调用子组件的方法
+        this.ref.shopcart.drop(target);
       }
     },
     components:{
-//      在模版中使用
-        shopcart
+//      在模版中使用组件
+        shopcart,
+        cartcontrol
+    },
+    events:{
+        'cart.add'(target){
+//            处理购物车点击添加时的事件
+          this._drop(target);
+          console.log('ssss')
+        }
     }
   };
 </script>
@@ -263,6 +295,11 @@
             font-size: 10px;
             color: rgb(147,153,159);
           }
+        }
+        .cartcontrol-wrap{
+          position: absolute;
+          right: 0;
+          bottom: 12px;
         }
       }
     }

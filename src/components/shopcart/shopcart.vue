@@ -17,6 +17,14 @@
       </div>
     </div>
   </div>
+  <!--抛物线小球  若干个-->
+  <div class="ball-container">
+    <!--<transition name="drop">-->
+      <div v-for="ball in balls" v-show="ball.show" class="ball">
+        <div class="inner"></div>
+      </div>
+    <!--</transition>-->
+  </div>
 </div>
 </template>
 <script type="text/ecmascript-6">
@@ -25,20 +33,30 @@ export default{
         selectFoods:{
 //            选择商品的数组
             type:Array,
-          default(){
+            default(){
                 return [];
-          }
+            }
         },
-      deliveryPrice:{
+        deliveryPrice:{
           type:Number,
           default:0
-      },
-      minPrice:{
+        },
+        minPrice:{
         type:Number,
         default:0
-      }
+        }
     },
-  computed:{
+    data() {
+        return {
+            balls:[
+                {show:false},
+                {show:false},
+                {show:false},
+                {show:false},
+                {show:false}]
+    };
+    },
+    computed:{
         totalPrice(){
 //            计算选中商品的总价
           let total = 0;
@@ -75,7 +93,12 @@ export default{
               return 'enough';
           }
         }
-  }
+  },
+    methods:{
+        drop(el){
+            console.log(111);
+        }
+    }
 };
 </script>
 <style rel="stylesheet/scss" lang="scss">
@@ -180,6 +203,26 @@ export default{
           color: #fff;
         }
       }
+    }
+  }
+  .ball-container{
+    .ball{
+      position: fixed;
+      left: 32px;
+      bottom: 22px;
+      z-index: 200;
+      .inner{
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: rgb(0,16,220);
+        transition: all .4s;
+      }
+      /*&.drop-enter-active,&.drop-leave-active{*/
+          /*transition: all .4s;*/
+      /*}*/
+      /*&.drop-enter,&.drop-leave-active{*/
+      /*}*/
     }
   }
 }
